@@ -1,0 +1,26 @@
+sudo: required
+
+services:
+  - docker
+
+before_install:
+  - docker build -t lkblk/multi-test -f ./client/Dockerfile.dev ./client
+
+script:
+  - docker run lkblk/multi-test npm test -- --coverage
+
+after_success:
+  # Build production images
+  - docker build -t lkblk/multi-client ./client
+  - docker build -t lkblk/multi-nginx ./nginx
+  - docker build -t lkblk/multi-server ./server
+  - docker build -t lkblk/multi-worker ./worker
+  
+  # Log into DockerHub
+  - echo "$DOCKER_PWD" | docker login -u "$DOCKER_ID" --password-stdin
+
+  # Push images to DockerHub
+  - docker push lkblk/multi-client
+  - docker push lkblk/multi-nginx
+  - docker push lkblk/multi-server
+  - docker push lkblk/multi-worker
